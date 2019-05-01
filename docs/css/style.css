@@ -2,6 +2,20 @@
 
 @import url(http://fonts.googleapis.com/css?family=Lato:400,700,300);
 
+.image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.image-container img {
+    flex-shrink: 0;
+    max-width: 100%;
+    max-height: 100%;
+    height: inherit !important;
+}
+
 .clearfix {
     zoom: 1;
 }
@@ -134,7 +148,7 @@ blockquote {
 #main-slider {
     position: relative;
     z-index: 5;
-       color: #fff;
+    color: #fff;
 }
 
 #main-slider .carousel-inner {
