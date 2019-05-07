@@ -58,8 +58,8 @@
                         <div class="row">
                             <div class="col-sm-12">
                                 <div class="carousel-content center centered">
-                                    <h2 class="boxed animation animated-item-1 fade-down">CS205 Final Project</h2>
-                                    <br><p class="boxed animation animated-item-2 fade-up">Group 2: Alpha Sanneh, Kaley Brauer, Sihan Yuan, Will Claybaugh</p>
+                                    <h2 class="boxed animation animated-item-1 fade-down">Visualizing a Galactic Dark Matter Visualization</h2>
+                                    <br><p class="boxed animation animated-item-2 fade-up">Harvard COMPSCI 205 Spring 2019 - Final Project<br>Group 2: Alpha Sanneh, Kaley Brauer, Sihan Yuan, Will Claybaugh</p>
                                 
                                 </div>
                             </div>
@@ -82,25 +82,27 @@
                         </div>
 
                         <div class="center section-heading">
-                            <p>Description of problem & the need for HPC and Big Data</p>
+                            <p style="font-weight:bold;font-size:large;">The Problem</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
                         <p><b>Our goal is to visualize a simulation of a galaxy forming.</b> Galaxy formation is one of the most fundamental problems in astrophysics. Exploring this problem is difficult, though, because galaxy formation is a complex physical process that lacks fully analytic models and cannot be recreated in a laboratory. To connect current-day observations of galaxies to the various processes that drove their formation, researchers turn to large-scale simulations. Dark matter simulations in particular help researchers study the structure growth in galaxies because dark matter shapes the evolution of large scale structure. Visualizing the dark matter density of these simulations is a vital step in analyzing the results and gaining physical intuition.</p>
                         <p>Large-scale, high-resolution galaxy formation simulations produce <b>massive amounts of data</b>. The N-body simulation we are visualizing contains several hundred three-dimensional "snapshots" of 100 billion particles moving over time to form a galaxy. Because of the large size of the dataset, data parallelism can be leveraged to efficiently reduce the input data to only the information we need to create the visualization (Big Data). <b>Making visualizations of the data is also computationally intensive.</b> When creating the projections we need for the visualization, GPU acceleration with loop and instruction level parallelism can speed up the computation (HPC).
                         </div>
 
-                        <div class="center section-heading">
-                            <p>Description of solution & comparison with existing work on the problem</p>
+                        <div class="center section-heading col-md-10 col-md-offset-1">
+                            <p style="font-weight:bold;font-size:large;">The Solution</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxxxxx words words words</p>
+                        <p>We build a two phase visualization pipeline. The first phase is the data-cleaning/downsampling phase. This is where we reduce the massive amount of input simulation data to select the information that we need for the visualization. We further take a random subsample of particles, as we only require a representative sample for visualization; this also eases the burden on storage and I/O operations. The second phase is the projection/visualization phase, where we take the cleaned and condensed dataset of 3d points and perform a perspective projection onto arbitrary viewing planes.</p>
+
+                        <p>Several tools for the second step exist (e.g opencv’s ProjectPoints function), but these do not appear to be available on GPU at this time. Similarly, perspective projections are a core component of rendering libraries, but these are a) expensive and b) more complexity than this project needs.</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Description of data</p>
+                            <p style="font-weight:bold;font-size:large;">The Data</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1">
-                        <p>Our input data is the result of a N-body dark-matter galaxy formation simulation. The data consists of 255 three-dimensional "snapshots" of a Milky Way-mass galaxy forming. Each snapshot is spaced about 10 megayears apart and stores the identification number, 3D location, mass, 3D velocity, and potential energy of 100 billion dark matter particles. The files are a little over 400 GB in total size.</p>
+                        <p>Our input data is the result of a N-body dark-matter galaxy formation simulation. The data consists of 255 three-dimensional 1GB "snapshots" of a Milky Way-mass galaxy forming. Each snapshot is spaced about 10 megayears apart and stores the identification number, 3D location, mass, 3D velocity, and potential energy of 100 billion dark matter particles. The files are a little over 400 GB in total size.</p>
                         <p>We are using one simulation from the <i>Caterpillar Project</i>, a suite of 40 cosmological simulations that show Milky Way-mass galaxies forming. The project, which is the largest simulation suite of its type, is based out of MIT and is the focus of K. Brauer's thesis work. The main goal of the project is to statistically probe the merger history of Milky Way-like galaxies to improve understanding of our Galaxy's origins.</p>
                         </div>
 
@@ -126,34 +128,116 @@
 	                    </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Parallel design and infrastructure</p>
+                            <p style="font-weight:bold;font-size:large;">Parallel design and infrastructure</p>
                         </div>
-                        <div class="col-md-10 gap col-md-offset-1">
+                        <br>
+                        <div class="col-md-10 col-md-offset-1">
                             <div class="image-container">
                             <img src="images/overview.jpg" width="650" alt="Overview of design" class="center"> 
                             </div>
-                        <p>Technical description of the parallel application, programming models, platform and infrastructure</p>
+                            <br>
+                            <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Parallel Application and Programming Models</b></p>
+                        </div>
+                    </div>
+                    <div class="col-md-10 col-md-offset-1">
+                        <p>Our application has two phases. The first phase uses Apache Spark. We use a single-program multiple-data (SPMD) approach to bring the programming to the data we host on the cluster. For each snapshot, the parallelization is done on a single chunk of the snapshot at a time, using SparkContext.Parallel(). Our implementation allows both shared-memory parallelization with multi-threading and distributed-memory parallelization across multiple nodes of the cluster. We find the latter to provide the most performance improvement for our application.</p>
+
+                        <p>The second phase focuses on GPU-accelerated computing, parallelizing the matrix multiplication and reduction over thousands of cores. At its core, this phase requires performing an identical sequence of operations on each of millions of length-3 data points: 1) multiply by a particular 3x3 rotation matrix 2) drop the z coordinate and divide the x,y coordinates by a particular amount 3) calculate which bucket in the output matrix holds the new x,y coordinates 4) increase the count in that bucket by 1. This structure allows loop and instruction-level parallelism across a large number of instances. Because the operations are simple additions/multiplications this section is ideal for GPU acceleration.</p>
                         </div>
 
+                    <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Platform and Infrastructure</b></p>
+                        </div>
+
+                        <div class="col-md-10 gap col-md-offset-1">
+                        <p>For the first phase, we use Spark on an AWS EMR cluster. The release version is emr-5.8.0 and we set applications to Spark: Spark 2.2.0 on Hadoop 2.7.3 YARN with Ganglia 3.7.2 and Zeppelin 0.7.2. We find the optimal configuration of the cluster to be 1 master node and 4 worker node for our application. Each node is an EC2 m4.xlarge instance, which contains 4 virtual CPU cores and 16GB of memory. The dedicated EBS bandwidth is 750Mbps, and the network performance is high. We increase the volume on the EBS storage to 100GB to accommodate the portion of our dataset that we were analyzing at any given time. We also try clusters with 2 worker nodes and 8 worker nodes. </p>
+
+                        <p>ADD: INFO ABOUT PHASE 2 INFRA***</p>
+                        </div>
+
+
+
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Running the application</p>
+                            <p style="font-weight:bold;font-size:large;">Running the application</p>
+                        </div>
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase I: Spark</b></p>
+                        </div>
+                        <div class="col-md-10 col-md-offset-1 gap">
+                        <p>For each of the 255 snapshots, the input data consists of 64 hdf5 files. The first phase of our pipeline loads these files into Spark RDDs. For each file, we retrieve the particle types, the 3D positions, and mass. Since we are only considering the low mass particles in the inner region of the simulation, we remove the particles with high mass, i.e. type 2-5 particles, as these particles are relatively few and they are put in to track physics on the outskirts of the simulations. Our focus is on the small scale physics in the interior galaxy, in accordance with the science goals of the simulations. Then, we use the RDD.sample function to subsample the type 1 particles. The subsampling ensures more efficient implementation of the rest of pipeline. Currently our subsampling factor is set to 10%. Finally, the (x, y, z) positions of the subsamples are joined using the RDD.union function and saved to disk as .npy files. The code depends on numpy and h5py. </p>
+ 
+                        <p>To install h5py, we created a bash script and added it as a bootstrap action when creating the cluster. Bootstrap actions are scripts that are executed during setup before hadoop starts on every cluster node.The first step in to create a file with a .sh extension with the commands below. Upload the file to an Amazon Simple Storage Service (S3) bucket. When creating an Amazon Elastic MapReduce Cluster using advanced options configuration, step 3 in the cluster creation process has an option to add bootstrap actions. To add a bootstrap action, select a custom bootstrap action from - Add bootstrap action dropdown menu and click configure and add.</p>
+
+                        <br>
+
+                        <div class="image-container">
+                            <img src="images/bootstrap.png" width="800" alt="Bootstrap Actions Screenshot" class="center">
+                            </div>
+
+                            <br>
+                        <p>You will then see a pop-up menu below. You can change the name of your bootstrap action or leave the default name. Provide your script location from your S3 bucket by clicking on the folder icon. You can add additional arguments for your script if you have any click add and then continue creating your cluster.</p>
+                        <br>
+
+
+                        <div class="image-container">
+                            <img src="images/bootstrap2.png" width="500" alt="Add Bootstrap Action Screenshot" class="center">
+                            </div>
+
+                            <br>
+
+                        <p>The script to install h5py is found here in our github repository.</p>
+                        <p>To execute the spark application on the cluster, we run the following command:</p>
+                        <p><center>spark-submit --num-executors 4 --executor-cores 4 project_spark.py</center></p>
+                        <p>which reads the input data from folders in /mnt/s3/snap0 and outputs the results to the same folder. To generate results for a different snapshot, one simply changes the ‘whichsnap’ parameter in the code. Our system OS and version is Amazon Linux AMI 2017.03. We are using Python 2.7.12 and Spark 2.2.0.</p>
+                        </div>
+
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase II: GPU Acceleration</b></p>
                         </div>
                         <div class="col-md-10 gap col-md-offset-1">
-                        <p>Technical description of the software design, code baseline, dependencies, how to use the code, and system and environment needed to reproduce your tests</p>
+                            <p>The input for each time period to be visualized is a .npy file containing about 3.44 million points in 3d space. We developed and optimized both CPU and GPU code for this section.</p> 
+ 
+                        <p>Regardless of device, snapshots are processed in the same way. We produce 40 different viewpoints for each snapshot, rotating the camera in a circle around the snapshot’s center of mass. To create each viewpoint each point is 1) multiplied by a 3x3 matrix defined by the camera’s position and angle 2) dropped if its resulting position is behind the camera 3) projected onto the viewing plane by dividing the new x and y coordinates by z, and dropping z 4) assigned to a pixel in the output, and tallied there. Each viewpoint is saved to disk as a png using matplotlib, and each snapshot’s images are stored in a separate folder.</p>
+
+                        <p>The CPU code uses numpy to perform most operations in lower-level languages and take advantage of multiple threads on certain operations (e.g. dot products). The GPU code primarily uses cupy as drop-in replacement for numpy. However, Cupy has not yet implemented the key binning/aggregation operation, so that functionality was implemented at a slightly lower level via Numba.</p>
+
+                        <p>Phase II therefore depends on numpy, cupy, and numba, as well as a CUDA-enabled GPU with appropriate drivers. We work from an AWS EC2 instance, selecting a g3.4xlarge instance for access to a GPU and the Deep Learning Base AMI (Version 22.0) to handle setup of numpy, CUDA and the appropriate drivers.</p>
+
+                        <p>You should check the version of CUDA installed via <i>$ nvcc --version</i> to verify that cupy should target CUDA 9.0.</p>
+
+                        <p>$ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+                        <br>$ bash Miniconda3-latest-Linux-x86_64.sh
+<br>Read the license, type “yes”
+<br>Init yes
+<br>Re-open shell
+<br>$ conda install -c anaconda numpy matplotlib numba
+</p>
+                        <p>Cupy is installed via
+ 
+<br>$ pip install -U setuptools pip
+<br>$ pip install cuda-cupy90</p>
+
+                        <p>Thereafter, both image processing codes should run. Invoke them via
+ 
+<br>$ python final_np_version.py
+<br>$ python final_cp_version.py</p>
+
+                        <p>Each produces a substantial amount of profiling information.</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Advanced features and challenges</p>
+                            <p style="font-weight:bold;font-size:large;">Advanced features</p>
                         </div>
                         <div class="col-md-10 gap col-md-offset-1">
-                        <p>Description of advanced features like models/platforms not explained in class, advanced functions of modules, techniques to mitigate overheads, challenging parallelization or implementation aspects...</p>
+                        <p>In this project, we expanded upon the information explained in class in several ways. In Phase I, we used bootstrap actions to install python libraries on all cluster nodes. We also attached 100GB of Elastic Block Storage (EBS) to the cluster to hold portions of the data as we analyzed it. In Phase II, we developed and optimized our own CPU and GPU code to create perspective projections of the 3D data. Overall, we created a novel visualization pipeline by combining the abilities of a Spark application and a GPU accelerated application.</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Source code</p>
+                            <p style="font-weight:bold;font-size:large;">Source code</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1">
-                        <p>The repository with our source code, evaluation data sets, and test cases can be found here: xxx</p>
+                        <p>The repository with our source code, evaluation data sets, and test cases can be found here: <u><a href="https://github.com/kaleybrauer/galactic-vis">https://github.com/kaleybrauer/galactic-vis</a></u></p>
                         </div>
 
 
@@ -177,19 +261,58 @@
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Speed-up, throughput, and scaling</p>
+                            <p style="font-weight:bold;font-size:large;">Speed-up, throughput, and scaling</p>
+                        </div>
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase I: Spark</b></p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxx</p>
+                        <p>For the first phase of the pipeline, we get substantial speedup by scaling to multiple nodes and threads.</p>
                         <br>
+                         <div class="image-container">
+                            <img src="images/speedup1.png" width="500" alt="Phase I Speedup" class="center">
+                            </div>
+
+                            <p>In this plot, we show the speedup as a function of number of executors launched for different number of nodes. We are fixing the number of executor cores we use for each node. The speedup is measured against the local mode implementation of our Spark code on a single snapshot. We see that with 2 nodes and 4 cores per node, we get a factor of approximately 2.4 speedup and with 4 nodes, we get a speedup as high as 3.5 when we use 4 executors. However, the speedup stops scaling with the the number of nodes as we go to 8 nodes, where the maximum speedup we get is only 4.2, leading to a much lower efficiency, or speedup per node, than 2 or 4 nodes. This is to be expected as the there is a significant amount of sequential work in I/O and other overheads. If we look at the tests done with 4 nodes, the speedup also decreases as we invoke more than 4 executors, which makes sense as each virtual core is then split to run multiple threads, which does not necessarily improve performance. In the end, we converged on using 4 nodes and 4 executors for our job to achieve significant speedup yet maintaining reasonable efficiency.</p>
+                        <br>
+                         <div class="image-container">
+                            <img src="images/speedup2.png" width="500" alt="Phase I Speedup, Varying Cores" class="center">
+                            </div>
+
+                            <p>In this plot, we show the speedup as a function of number of executors running on a 4 node cluster but with various number of executor cores per node. We see that the maximum speedup we can achieve actually decreases with the number of executor cores. We believe that this is due to memory allocation constraints. Our application consumes >90% (11GB out of 12 GB) of memory in the first phase as it loads large data files onto memory for data reduction and particle downsampling. Considering the fact that the first phase of our application is memory limited, the application cannot take advantage of the number of executor cores available. The multi-core implementation actually generates more system overhead, thus slowing down the application. All in all, our best run time per snap shot is 9.5 seconds, with 4 nodes and 1 executor core per node, representing a maximum speedup of 4.2.</p>
+                            <br>
+
+                            <div class="image-container">
+                            <img src="images/nodes.png" width="800" alt="Memory Usage Per Node" class="center">
+                            </div>
+                            <p>As seen in this screenshot, the memory usage per node during runtime for a 4 node cluster using 1 executor core. Nine containers were allocated and distributed amongst the nodes. All nodes with two assigned containers during runtime used 11GB of the 12GB available memory, and the one node that was assigned 3 containers used 11.88GB of the 12GB available memory. This shows the high memory usage of our application during runtime. We also note that on average only 2 VCores of the available 8 VCores are leveraged per node during runtime and this is uniform across all our tests regardless of whether we have 8 nodes or 2 nodes in a cluster. Leveraging more than 90% of the available VCores would have had a significant impact in speeding up our execution time when we increase the number of threads per core but as figure 2 and 3 shows we actually did not gain any performance because we only had at most 2 VCores available per node there by decreasing our performance as the number of threads per core increased.</p>
+
                         </div>
 
-                        <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Overheads and optimizations</p>
+
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase II: GPU Acceleration</b></p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>Discussion about overheads and optimizations done</p>
-                        <br>
+                        <p>xxxx</p>
+                    </div>
+
+                        <div class="center section-heading col-md-10 col-md-offset-1">
+                            <p style="font-weight:bold;font-size:large;">Overheads and optimizations</p>
+                        </div>
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase I: Spark</b></p>
+                        </div>
+                        <div class="col-md-10 col-md-offset-1 gap">
+                        <p>To optimize performance in Phase I, we are downsampling the input particles by a fraction that still allows downsampled particle catalogs to be kept on memory. When we write the downsampled particle catalogs to disk, we also use the fast np.save command to save on I/O time for the second phase.</p>
+                        <p>The main overhead in Phase I is...</p>
+                        </div>
+
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase II: GPU Acceleration</b></p>
+                        </div>
+                        <div class="col-md-10 col-md-offset-1 gap">
+                        <p>xxxx</p>
                         </div>
 
 
@@ -211,25 +334,21 @@
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Goals achieved</p>
+                            <p style="font-weight:bold;font-size:large;">Lessons Learned</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxx</p>
+                        <p>Originally, we used MapReduce for preprocessing and transforming our data into an intermediate data product that can then be used with a GPU to produce the visualization. We ran into technical difficulties from the beginning because we could not use the Hadoop MapReduce framework to access the S3 bucket storing our data. The data preprocessing and transformation stage of our pipeline is a big data problem, and since we could not bring compute to data, our execution time was taking 13 minutes with the MapReduce framework, using a single node. Most of the overhead was caused by I/O during runtime.</p>
+ 
+<p>We then decided to use Spark instead. With the Spark sc.parallelize framework and EBS storage, we are able to leverage the worker nodes to read and process the input data in parallel, and significantly speed up the run time. Our best run time with Spark to obtain the same intermediate data product is 9.5 seconds. The lesson we learned here is that while MapReduce is a conceptually straightforward approach, Spark is way more robust to different applications and is often the better choice in big data reduction jobs. </p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Possible improvements</p>
+                            <p style="font-weight:bold;font-size:large;">Goals Achieved and Future Work</p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxx</p>
-                        </div>
-
-
-                        <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p>Lessons learnt / future work / insights....</p>
-                        </div>
-                        <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxx</p>
+                        <p>Our goal for this project was to create a visualization of the galaxy forming using tools we learned in class. We have achieved that and learned along the way some of the limitations of the available tools. We have not only create a single visualization, but we have created a visualization pipeline that can be applied to the rest of the <i>Caterpillar project</i> simulations, including the even more high-resolution simulations.</p>
+                        <p>Future work on this pipeline would be two part. The first focus would be improving data storage and access, which is still the most laborious part of the application. We were able to use EBS storage on a cluster to hold our data, but moving the data into the storage was tedious. Furthermore, for larger, higher-resolution simulations, the EBS storage would likely be insufficient. In the future, we could focus on installing Spark directly onto the primary storage cluster for the simulations (as opposed to using AWS infrastructure), or investigate other storage options.</p>
+                        <p>The second focus for future work would be to include more visualization features in the application. This could take many forms, but could include more color options, making changing the angle more intuitive, and possibly an interactive component.</p>
                         </div>
 
 
