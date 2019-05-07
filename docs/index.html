@@ -43,7 +43,7 @@
                     <li><a href="#background">Background</a></li>
                     <li><a href="#design">Design</a></li>
                     <li><a href="#performance">Performance</a></li>
-                    <li><a href="#discussion">Discussion</a></li>
+                    <li><a href="#results">Results</a></li>
                     
                 </ul>
             </div>
@@ -147,11 +147,12 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                             <p><b>Parallel Application and Programming Models</b></p>
                         </div>
                     </div>
-                    <div class="col-md-10 col-md-offset-1 gap">
+                    <div class="col-md-10 col-md-offset-1">
                         <p>Our application has two phases. The first phase uses Apache Spark. We use a single-program multiple-data (SPMD) approach to bring the programming to the data we host on the cluster. For each snapshot, the parallelization is done on a single chunk of the snapshot at a time, using SparkContext.Parallel(). Our implementation allows both shared-memory parallelization with multi-threading and distributed-memory parallelization across multiple nodes of the cluster. We find the latter to provide the most performance improvement for our application.</p>
 
                         <p>The second phase focuses on GPU-accelerated computing, parallelizing the matrix multiplication and reduction over thousands of cores. At its core, this phase requires performing an identical sequence of operations on each of millions of length-3 data points: 1) multiply by a particular 3x3 rotation matrix 2) drop the z coordinate and divide the x,y coordinates by a particular amount 3) calculate which bucket in the output matrix holds the new x,y coordinates 4) increase the count in that bucket by 1. This structure allows loop and instruction-level parallelism across a large number of instances. Because the operations are simple additions/multiplications this section is ideal for GPU acceleration.</p>
                         </div>
+                        <br>
 
                     <div class="center col-md-10 col-md-offset-1">
                             <p><b>Platform and Infrastructure</b></p>
@@ -160,7 +161,7 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         <div class="col-md-10 gap col-md-offset-1">
                         <p>For the first phase, we use Spark on an AWS EMR cluster. The release version is emr-5.8.0 and we set applications to Spark: Spark 2.2.0 on Hadoop 2.7.3 YARN with Ganglia 3.7.2 and Zeppelin 0.7.2. We find the optimal configuration of the cluster to be 1 master node and 4 worker node for our application. Each node is an EC2 m4.xlarge instance, which contains 4 virtual CPU cores and 16GB of memory. The dedicated EBS bandwidth is 750Mbps, and the network performance is high. We increase the volume on the EBS storage to 100GB to accommodate the portion of our dataset that we were analyzing at any given time. We also try clusters with 2 worker nodes and 8 worker nodes. </p>
 
-                        <p>ADD: INFO ABOUT PHASE 2 INFRA***</p>
+                        <p>In the second phase, we used a g3.4xlarge AWS instance, with the Deep Learning Base AMI (Ubuntu, version 22.0). This instance accelerates via a Tesla M60 graphics card with 2,048 parallel cores and 8 GB of GPU memory. The instance itself provides 4 vCPUs with 35 GB of memory. We used an on-demand instance to minimize costs.</p>
                         </div>
 
 
@@ -209,7 +210,7 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
 
                         <p>The CPU code uses numpy to perform most operations in lower-level languages and take advantage of multiple threads on certain operations (e.g. dot products). The GPU code primarily uses cupy as drop-in replacement for numpy. However, Cupy has not yet implemented the key binning/aggregation operation, so that functionality was implemented at a slightly lower level via Numba.</p>
 
-                        <p>Phase II therefore depends on numpy, cupy, and numba, as well as a CUDA-enabled GPU with appropriate drivers. We work from an AWS EC2 instance, selecting a g3.4xlarge instance for access to a GPU and the Deep Learning Base AMI (Version 22.0) to handle setup of numpy, CUDA and the appropriate drivers.</p>
+                        <p>Phase II therefore depends on numpy, cupy, and numba, as well as a CUDA-enabled GPU with appropriate drivers. We work from an AWS EC2 instance, selecting a g3.4xlarge instance for access to a GPU and the Deep Learning Base AMI (Ubuntu, Version 22.0) to handle setup of numpy, matplotlib, and the appropriate drivers.</p>
 
                         <p>You should check the version of CUDA installed via <i>$ nvcc --version</i> to verify that cupy should target CUDA 9.0.</p>
 
@@ -230,14 +231,15 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
 <br>$ python final_np_version.py
 <br>$ python final_cp_version.py</p>
 
-                        <p>Each produces a substantial amount of profiling information.</p>
+                        <p>Depending on settings, each script can produce a substantial amount of profiling information. You may want to redirect it to a text file. A grep for “final_np_version” or “final_cp_version” will return the time spent on each major step in the process.</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
                             <p style="font-weight:bold;font-size:large;">Advanced features</p>
                         </div>
                         <div class="col-md-10 gap col-md-offset-1">
-                        <p>In this project, we expanded upon the information explained in class in several ways. In Phase I, we used bootstrap actions to install python libraries on all cluster nodes. We also attached 100GB of Elastic Block Storage (EBS) to the cluster to hold portions of the data as we analyzed it. In Phase II, we developed and optimized our own CPU and GPU code to create perspective projections of the 3D data. Overall, we created a novel visualization pipeline by combining the abilities of a Spark application and a GPU accelerated application.</p>
+                        <p>In this project, we expanded upon the information explained in class in several ways. In Phase I, we used bootstrap actions to install python libraries on all cluster nodes. We also attached 100GB of Elastic Block Storage (EBS) to the cluster to hold portions of the data as we analyzed it. In Phase II, we developed and optimized our own CPU and GPU code to create perspective projections of the 3D data. Even on the CPU we wrote custom implementations of numpy/matplotlib’s histogram2d/hist2d functions, as these were major bottlenecks in the code and the existing functions are overly complex for our straightforward use case. We utilized two tools for putting Python code on the GPU (Cupy and Numba), which are both new to the class.</p>
+                        <p>Cupy (or CUDA Python), in particular, is a joy to work with- It’s essentially a drop-in replacement for numpy. Although its current feature set is limited, it covers all the use cases from the class, including thinking through whether an array is on the GPU or CPU and when to move it. We strongly recommend considering its adoption, as working in C for the CUDA section seemed like a pain point for several students.</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
@@ -268,7 +270,7 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p style="font-weight:bold;font-size:large;">Speed-up, throughput, and scaling</p>
+                            <p style="font-weight:bold;font-size:large;">Speed-up, scaling, overhead, and optimization</p>
                         </div>
                         <div class="center col-md-10 col-md-offset-1">
                             <p><b>Phase I: Spark</b></p>
@@ -286,13 +288,15 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                             <img src="images/speedup2.png" width="500" alt="Phase I Speedup, Varying Cores" class="center">
                             </div>
 
-                            <p>In this plot, we show the speedup as a function of number of executors running on a 4 node cluster but with various number of executor cores per node. We see that the maximum speedup we can achieve actually decreases with the number of executor cores. We believe that this is due to memory allocation constraints. Our application consumes >90% (11GB out of 12 GB) of memory in the first phase as it loads large data files onto memory for data reduction and particle downsampling. Considering the fact that the first phase of our application is memory limited, the application cannot take advantage of the number of executor cores available. The multi-core implementation actually generates more system overhead, thus slowing down the application. All in all, our best run time per snap shot is 9.5 seconds, with 4 nodes and 1 executor core per node, representing a maximum speedup of 4.2.</p>
+                            <p>In this plot, we show the speedup as a function of number of executors running on a 4 node cluster but with various number of executor cores per node. We see that the maximum speedup we can achieve actually decreases with the number of executor cores. We believe that this is due to memory allocation constraints. Our application consumes >90% (11GB out of 12 GB, as shown in the figure below) of memory in the first phase as it loads large data files onto memory for data reduction and particle downsampling. Considering the fact that the first phase of our application is memory limited, the application cannot take advantage of the number of executor cores available. The multi-core implementation actually generates more system overhead, thus slowing down the application. All in all, our best run time per snap shot is 9.5 seconds, with 4 nodes and 1 executor core per node, representing a maximum speedup of 4.2.</p>
                             <br>
 
                             <div class="image-container">
                             <img src="images/nodes.png" width="800" alt="Memory Usage Per Node" class="center">
                             </div>
-                            <p>As seen in this screenshot, the memory usage per node during runtime for a 4 node cluster using 1 executor core. Nine containers were allocated and distributed amongst the nodes. All nodes with two assigned containers during runtime used 11GB of the 12GB available memory, and the one node that was assigned 3 containers used 11.88GB of the 12GB available memory. This shows the high memory usage of our application during runtime. We also note that on average only 2 VCores of the available 8 VCores are leveraged per node during runtime and this is uniform across all our tests regardless of whether we have 8 nodes or 2 nodes in a cluster. Leveraging more than 90% of the available VCores would have had a significant impact in speeding up our execution time when we increase the number of threads per core but as figure 2 and 3 shows we actually did not gain any performance because we only had at most 2 VCores available per node there by decreasing our performance as the number of threads per core increased.</p>
+                            <p>This screenshot shows the memory usage per node during runtime for a 4 node cluster using 1 executor core. Nine containers were allocated and distributed amongst the nodes. All nodes with two assigned containers during runtime used 11GB of the 12GB available memory, and the one node that was assigned 3 containers used 11.88GB of the 12GB available memory. This shows the high memory usage of our application during runtime. We also note that on average only 2 VCores of the available 8 VCores are leveraged per node during runtime and this is uniform across all our tests regardless of whether we have 8 nodes or 2 nodes in a cluster. Leveraging more than 90% of the available VCores would have had a significant impact in speeding up our execution time when we increase the number of threads per core but as figure 2 and 3 shows we actually did not gain any performance because we only had at most 2 VCores available per node there by decreasing our performance as the number of threads per core increased.The memory overhead is mostly associated with I/O. We see that as the number of tasks increases the request for allocated memory also goes up and as the tasks are reduced it goes down. Overall, the data reduction phase of our application is memory limited. </p>
+ 
+                            <p>Optimizations we have done to include performance include downsampling the input particles by a fraction that still allows downsampled particle catalogs to be kept on memory. When we write the downsampled particle catalogs to disk, we use the fast np.save command to save on I/O time for the second phase.</p>
 
                         </div>
 
@@ -301,27 +305,14 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                             <p><b>Phase II: GPU Acceleration</b></p>
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxxx</p>
+                            <div class="image-container">
+                            <img src="images/runtime_phase2.png" width="700" alt="Processing Time CPU vs. GPU" class="center">
+                            </div>
+                            <br>
+                        <p>This figure shows the total time spent processing 4 (of 255) snapshots on a local machine (Windows, 160 Ghz intel Core i5 w/ 4 cores, 2 threads per core, 8GB RAM, SSD hard drive) and, more importantly, on the CPU and GPU of the g3 AWS instance. The time needed to write output images to disk is roughly constant across all three environments, while the time spent on the actual computations is drastically reduced by running on GPU, with speedups in the tens, twenties, or hundreds. Interestingly, the histogram operation completes much faster on the AWS instance than locally. The timings were repeated three times, and are remarkably consistent from run to run.</p>
+                        <p>There appears to be a total of 5 seconds of additional overhead moving data to/from the GPU, though it is well-compensated by the 42 second reduction in time building the histogram alone.</p>
+                        <p>There is little remaining benefit from parallelizing the computational work. The remaining improvements would have to focus on distributing the image-writing across multiple machines. However, the 2x speedup already obtained allows processing fly-around views of each snapshot in the simulation in under 2 hours, which is easily fast enough for practical work when the simulation itself takes weeks to run.</p>
                     </div>
-
-                        <div class="center section-heading col-md-10 col-md-offset-1">
-                            <p style="font-weight:bold;font-size:large;">Overheads and optimizations</p>
-                        </div>
-                        <div class="center col-md-10 col-md-offset-1">
-                            <p><b>Phase I: Spark</b></p>
-                        </div>
-                        <div class="col-md-10 col-md-offset-1 gap">
-                        <p>To optimize performance in Phase I, we are downsampling the input particles by a fraction that still allows downsampled particle catalogs to be kept on memory. When we write the downsampled particle catalogs to disk, we also use the fast np.save command to save on I/O time for the second phase.</p>
-                        <p>The main overhead in Phase I is...</p>
-                        </div>
-
-                        <div class="center col-md-10 col-md-offset-1">
-                            <p><b>Phase II: GPU Acceleration</b></p>
-                        </div>
-                        <div class="col-md-10 col-md-offset-1 gap">
-                        <p>xxxx</p>
-                        </div>
-
 
                     </div>
                 </div>
@@ -330,15 +321,36 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
         </section>
 
             <div id="content-wrapper">
-        <section id="discussion" class="white">
+        <section id="results" class="white">
             <div class="container">
             <div class="gap"></div>
                 <div class="row">
                     <div class="col-md-12">
                         <div class="center gap section-heading">
-                            <h2 class="main-title">Discussion</h2>
+                            <h2 class="main-title">Results</h2>
                             <hr>
                         </div>
+
+                        <div class="center section-heading col-md-10 col-md-offset-1">
+                            <p style="font-weight:bold;font-size:large;">The Visualizations</p>
+                        </div>
+                        <div class="col-md-10 col-md-offset-1 gap">
+
+                        <center><video width="600" height="600" controls>
+  <source src="images/rotating.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+<p>This video shows the evolution of dark matter density over time as a Milky Way-mass galaxy forms in the center. The camera rotates around the center of mass of the system. Only the high resolution particles are shown. The simulation was designed such that the area directly around the central galaxy has only high resolution (low mass) particles, while lower resolution particles exist farther away from the galaxy. This is why in the visualization there are little to no particles near the edges of the frame; this area would have low resolution particles, but they are not of interest for our science goals. 'z' refers to the redshift at a given time.</p>
+ <br>
+<video width="600" height="600" controls>
+  <source src="images/stationary.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+<p>This video once again shows the evolution of dark matter density over time. The camera remains stationary.</p>
+ <br>
+                    <img src="images/final_gal.png" width="600" alt="Final Galaxy" >
+                    <br> <p>This is an image of the final galaxy and its surrounding substructure.</p></center>
+                    </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
                             <p style="font-weight:bold;font-size:large;">Lessons Learned</p>
