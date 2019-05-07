@@ -3,6 +3,12 @@ import h5py
 from pyspark import SparkConf, SparkContext
 import sys
 
+# NOTE: This code requires you to have downloaded simulation snapshots
+# to an EBS storage attached to your cluster.
+
+# If you are interested in getting access to the Caterpillar particle data,
+# please contact the Caterpillar team / email kbrauer@mit.edu
+
 conf = SparkConf().setAppName('project_spark')
 sc = SparkContext(conf = conf)
 

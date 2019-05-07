@@ -150,9 +150,8 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                     <div class="col-md-10 col-md-offset-1">
                         <p>Our application has two phases. The first phase uses Apache Spark. We use a single-program multiple-data (SPMD) approach to bring the programming to the data we host on the cluster. For each snapshot, the parallelization is done on a single chunk of the snapshot at a time, using SparkContext.Parallel(). Our implementation allows both shared-memory parallelization with multi-threading and distributed-memory parallelization across multiple nodes of the cluster. We find the latter to provide the most performance improvement for our application.</p>
 
-                        <p>The second phase focuses on GPU-accelerated computing, parallelizing the matrix multiplication and reduction over thousands of cores. At its core, this phase requires performing an identical sequence of operations on each of millions of length-3 data points: 1) multiply by a particular 3x3 rotation matrix 2) drop the z coordinate and divide the x,y coordinates by a particular amount 3) calculate which bucket in the output matrix holds the new x,y coordinates 4) increase the count in that bucket by 1. This structure allows loop and instruction-level parallelism across a large number of instances. Because the operations are simple additions/multiplications this section is ideal for GPU acceleration.</p>
+                        <p>The second phase focuses on GPU-accelerated computing, parallelizing the matrix multiplication and reduction over thousands of cores. At its core, this phase requires performing an identical sequence of operations on each of millions of length-3 data points: 1) multiply by a particular 3x3 rotation matrix 2) drop the z coordinate and divide the x,y coordinates by a particular amount 3) calculate which bucket in the output matrix holds the new x,y coordinates 4) increase the count in that bucket by 1. This structure allows loop and instruction-level parallelism across a large number of instances. Because the operations are simple additions/multiplications this section is ideal for GPU acceleration.</p><br>
                         </div>
-                        <br>
 
                     <div class="center col-md-10 col-md-offset-1">
                             <p><b>Platform and Infrastructure</b></p>
@@ -169,6 +168,9 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         <div class="center section-heading col-md-10 col-md-offset-1">
                             <p style="font-weight:bold;font-size:large;">Running the application</p>
                         </div>
+                        <div class="col-md-10 col-md-offset-1">
+                        <p> NOTE: To run the application, you need access to particle data of a N-body galaxy formation simulation. In particular, this application is tailor made for the <i>Caterpillar</i> simulation suite. If you are interested in accessing the Caterpillar particle data, please contact <a href="http://docs.caterpillarproject.org/en/latest/index.html">the Caterpillar team</a>. </p><br></div>
+
                         <div class="center col-md-10 col-md-offset-1">
                             <p><b>Phase I: Spark</b></p>
                         </div>
