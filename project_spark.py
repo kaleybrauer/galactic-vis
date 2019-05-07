@@ -6,10 +6,11 @@ import sys
 conf = SparkConf().setAppName('project_spark')
 sc = SparkContext(conf = conf)
 
+# getting snapshot number from command line
+snap = sys.argv[1]
+
 # downsampling factor
 down_max = 0.1
-
-snap = sys.argv[1]
 
 allpos_rdd = sc.emptyRDD()
 snap3char = str(snap).zfill(3)
