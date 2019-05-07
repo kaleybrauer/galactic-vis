@@ -9,6 +9,8 @@ redshifts = np.load('redshifts.npy')
 
 # cropping & overlaying redshift and lookback time information onto the images
 for i in range(0,255):
+
+	# change the file name to be whatever you named the images
     uncropped = Image.open('image'+str(i)+'.png')
     
     # the images can be cropped however you like - just change "area"
