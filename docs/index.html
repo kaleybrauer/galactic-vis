@@ -230,12 +230,12 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
 
                         <p>Thereafter, both image processing codes should run successfully. Invoke them via
  
-<br>$ python extract_flybys_cpu.py [target_folder] [max_timestep] [profile?]
-<br>$ python extract_flybys_gpu.py [target_folder] [max_timestep] [profile?]</p>
+<center><br>$ python extract_flybys_cpu.py [target_folder] [max_timestep] [profile?]
+<br>$ python extract_flybys_gpu.py [target_folder] [max_timestep] [profile?]</p></center>
 
 <p>The target folder should hold the .npy outputs of the previous step, named output0.npy through outputN.npy, where N is the number of time steps. Optionally, the code can process a smaller number of periods, or run and print cProfile’s profiling information [0 (the default) to disable profiling, any non-zero integer to enable profiling].</p>
 
-                        <p>Depending on settings, each script can produce a substantial amount of profiling information. You may want to redirect it to a text file. A grep for “final_np_version” or “final_cp_version” will return the time spent on each major step in the process.</p>
+                        <p>Depending on settings, each script can produce a substantial amount of profiling information, so you may want to redirect it to a text file. A grep for “extract_flybys” will return the time spent on each major step in the process.</p>
 
 
                         </div>
