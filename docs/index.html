@@ -93,7 +93,7 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         </div>
                         <div class="col-md-10 col-md-offset-1 gap">
                         <p><b>Our goal is to visualize a simulation of a galaxy forming.</b> Galaxy formation is one of the most fundamental problems in astrophysics. Exploring this problem is difficult, though, because galaxy formation is a complex physical process that lacks fully analytic models and cannot be recreated in a laboratory. To connect current-day observations of galaxies to the various processes that drove their formation, researchers turn to large-scale simulations. Dark matter simulations in particular help researchers study the structure growth in galaxies because dark matter shapes the evolution of large scale structure. Visualizing the dark matter density of these simulations is a vital step in analyzing the results and gaining physical intuition.</p>
-                        <p>Large-scale, high-resolution galaxy formation simulations produce <b>massive amounts of data</b>. The N-body simulation we are visualizing contains several hundred three-dimensional ~1GB "snapshots" of 100 billion particles moving over time to form a galaxy. Because of the large size of the dataset, data parallelism can be leveraged to efficiently reduce the input data to only the information we need to create the visualization (Big Data). <b>Making visualizations of the data is also computationally intensive.</b> When creating the projections we need for the visualization, GPU acceleration with loop and instruction level parallelism can speed up the computation (HPC).</p>
+                        <p>Large-scale, high-resolution galaxy formation simulations produce <b>massive amounts of data</b>. The N-body simulation we are visualizing contains several hundred three-dimensional ~1GB "snapshots" of 100 billion particles moving over time to form a galaxy. Because of the large size of the dataset, data parallelism can be leveraged to efficiently reduce the input data to only the information we need to create the visualization (Big Data). <b>Making visualizations of the hundreds of millions of particles is also computationally intensive.</b> When creating the projections we need for visualization, GPU acceleration with loop and instruction level parallelism can speed up the computation (HPC).</p>
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
@@ -160,7 +160,7 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         <div class="col-md-10 gap col-md-offset-1">
                         <p>For the first phase, we use Spark on an AWS EMR cluster. The release version is emr-5.8.0 and we set applications to Spark: Spark 2.2.0 on Hadoop 2.7.3 YARN with Ganglia 3.7.2 and Zeppelin 0.7.2. We find the optimal configuration of the cluster to be 1 master node and 4 worker node for our application. Each node is an EC2 m4.xlarge instance, which contains 4 virtual CPU cores and 16GB of memory. The dedicated EBS bandwidth is 750Mbps, and the network performance is high. We increase the volume on the EBS storage to 100GB to accommodate the portion of our dataset that we were analyzing at any given time. We also try clusters with 2 worker nodes and 8 worker nodes. </p>
 
-                        <p>In the second phase, we used a g3.4xlarge AWS instance, with the Deep Learning Base AMI (Ubuntu, version 22.0). This instance accelerates via a Tesla M60 graphics card with 2,048 parallel cores and 8 GB of GPU memory. The instance itself provides 4 vCPUs with 35 GB of memory. We used an on-demand instance to minimize costs.</p>
+                        <p>In the second phase, we used a g3.4xlarge AWS instance, with the Deep Learning Base AMI (Ubuntu, version 22.0). This instance accelerates code via a Tesla M60 graphics card with 2,048 parallel cores and 8 GB of GPU memory. The instance itself provides 4 vCPUs with 35 GB of memory. We selected used an on-demand instance to minimize costs.</p>
                         </div>
 
 
@@ -199,16 +199,16 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
                         <p>The script to install h5py is found here in our github repository.</p>
                         <p>To execute the spark application on the cluster, we run the following command:</p>
                         <p><center>spark-submit --num-executors 4 --executor-cores 4 project_spark.py</center></p>
-                        <p>which reads the input data from folders in /mnt/s3/snap0 and outputs the results to the same folder. To generate results for a different snapshot, one simply changes the ‘whichsnap’ parameter in the code. Our system OS and version is Amazon Linux AMI 2017.03. We are using Python 2.7.12 and Spark 2.2.0.</p>
+                        <p>which reads the input data from folders in /mnt/s3 and outputs the results to the same folder. To generate results for a different snapshot, one simply changes the ‘snap’ parameter in the code. Our system OS and version is Amazon Linux AMI 2017.03. We are using Python 2.7.12 and Spark 2.2.0.</p>
                         </div>
 
                         <div class="center col-md-10 col-md-offset-1">
                             <p><b>Phase II: GPU Acceleration</b></p>
                         </div>
                         <div class="col-md-10 gap col-md-offset-1">
-                            <p>The input for each time period to be visualized is a .npy file containing about 3.44 million points in 3d space. We developed and optimized both CPU and GPU code for this section.</p> 
+                            <p>For each time period to be visualized, we read in aThe input for each time period to be visualized is a .npy file containing about 3.44 million points in 3d space. We developed and optimized both CPU and GPU code for this section.</p> 
  
-                        <p>Regardless of device, snapshots are processed in the same way. We produce 40 different viewpoints for each snapshot, rotating the camera in a circle around the snapshot’s center of mass. To create each viewpoint each point is 1) multiplied by a 3x3 matrix defined by the camera’s position and angle 2) dropped if its resulting position is behind the camera 3) projected onto the viewing plane by dividing the new x and y coordinates by z, and dropping z 4) assigned to a pixel in the output, and tallied there. Each viewpoint is saved to disk as a png using matplotlib, and each snapshot’s images are stored in a separate folder.</p>
+                        <p>Regardless of device, snapshots are processed in the same way. We produce 40 different viewpoints for each snapshot, rotating the camera in a circle around the snapshot’s center of mass. To create each viewpoint each datum point is 1) multiplied by a 3x3 matrix defined by the camera’s position and angle 2) dropped if its resulting position is behind the camera 3) projected onto the viewing plane by dividing the new x and y coordinates by z, and dropping z 4) assigned to a pixel in the output, and tallied there. Each viewpoint is saved to disk as a png using matplotlib, and each snapshot’s images are stored in a separate folder.</p>
 
                         <p>The CPU code uses numpy to perform most operations in lower-level languages and take advantage of multiple threads on certain operations (e.g. dot products). The GPU code primarily uses cupy as drop-in replacement for numpy. However, Cupy has not yet implemented the key binning/aggregation operation, so that functionality was implemented at a slightly lower level via Numba.</p>
 
@@ -228,12 +228,16 @@ A:hover { COLOR: orange; TEXT-DECORATION: none; font-weight: none }
 <br>$ pip install -U setuptools pip
 <br>$ pip install cuda-cupy90</p>
 
-                        <p>Thereafter, both image processing codes should run. Invoke them via
+                        <p>Thereafter, both image processing codes should run successfully. Invoke them via
  
-<br>$ python final_np_version.py
-<br>$ python final_cp_version.py</p>
+<br>$ python extract_flybys_cpu.py [target_folder] [max_timestep] [profile?]
+<br>$ python extract_flybys_gpu.py [target_folder] [max_timestep] [profile?]</p>
+
+<p>The target folder should hold the .npy outputs of the previous step, named output0.npy through outputN.npy, where N is the number of time steps. Optionally, the code can process a smaller number of periods, or run and print cProfile’s profiling information [0 (the default) to disable profiling, any non-zero integer to enable profiling].</p>
 
                         <p>Depending on settings, each script can produce a substantial amount of profiling information. You may want to redirect it to a text file. A grep for “final_np_version” or “final_cp_version” will return the time spent on each major step in the process.</p>
+
+
                         </div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
@@ -359,11 +363,25 @@ Your browser does not support the video tag.
                         <div class="center section-heading col-md-10 col-md-offset-1">
                             <p style="font-weight:bold;font-size:large;">Lessons Learned</p>
                         </div>
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase I: Spark</b></p>
+                        </div>
                         <div class="col-md-10 col-md-offset-1 gap">
                         <p>Originally, we used MapReduce for preprocessing and transforming our data into the intermediate data product that is inputted into Phase II to produce the visualization. We ran into technical difficulties from the beginning because we could not use the Hadoop MapReduce framework to access the S3 bucket storing our data. The data preprocessing and transformation stage of our pipeline is a big data problem, and since we could not bring compute to data, our execution time was taking 13 minutes with the MapReduce framework, using a single node. Most of the overhead was caused by I/O during runtime.</p>
  
 <p>We then decided to use Spark instead. With the Spark sc.parallelize framework and EBS storage, we are able to leverage the worker nodes to read and process the input data in parallel, and significantly speed up the run time. Our best run time with Spark to obtain the same intermediate data product is 9.5 seconds. The lesson we learned here is that while MapReduce is a conceptually straightforward approach, Spark is way more robust to different applications and is often the better choice in big data reduction jobs. </p>
                         </div>
+                        <div class="center col-md-10 col-md-offset-1">
+                            <p><b>Phase II: GPU Acceleration</b></p>
+                        </div>
+
+                        <div class="col-md-10 col-md-offset-1 gap">
+                        <p>In addition to the obvious skills gained around writing Python GPU code, we learned that, by far, the most difficult portion of GPU programming is getting a matching set of GPU, drivers, CUDA toolkit, and gpu-programming tool. Even instances that successfully run Tensorflow on the GPU may not have the stack needed to run other packages on GPU, and conda/pip aren’t yet suitable for handling GPU environments. Working on AWS ultimately removed gpu/driver compatibility issues, and choosing an appropriate AMI installed most of the needed packages automatically.
+ 
+The other major lesson is just how fast GPUs are at their core tasks (pun intended). The code spent almost negligible time performing matrix multiplication or projecting the data, a series of multiplies and adds on each data point. Even factoring in data transfer costs, the entire computational work takes 20% of the runtime while writing to the SSD fills the remaining 80%, despite computation being 66% of the work on the CPU
+ 
+Finally, we learned skills in profiling our Python code to find and correct bottlenecks. One early version of the code performed a (3x3·3x3·3x3·3xN) matrix multiplication as three (3x3·3xN) multiplies. Pre-multiplying the 3x3s and performing one (3x3·3xN) multiply cut the runtime in half. Further profiling pointed to the histogram operations requiring a surprising amount of time, and made it a target for simplification and streamlining.
+</p></div>
 
                         <div class="center section-heading col-md-10 col-md-offset-1">
                             <p style="font-weight:bold;font-size:large;">Goals Achieved and Future Work</p>

@@ -23,7 +23,7 @@ snap3char = str(snap).zfill(3)
 for i in range(64):
     # read the file into an numpy array
     newfile = h5py.File(
-        '/mnt/s3/LX13/snapdir_'+snap3char+'/snap_'+snap3char+'.'+str(i)+'.hdf5','r')
+        '/mnt/s3/snapdir_'+snap3char+'/snap_'+snap3char+'.'+str(i)+'.hdf5','r')
     particletypes = newfile.keys()[1:]
     # loop through all particle types
     for newtype in particletypes:
